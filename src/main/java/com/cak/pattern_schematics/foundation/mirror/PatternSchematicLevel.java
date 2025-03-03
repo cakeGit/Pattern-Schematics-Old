@@ -1,9 +1,8 @@
 package com.cak.pattern_schematics.foundation.mirror;
 
 import com.cak.pattern_schematics.foundation.util.Vec3iUtils;
-import com.simibubi.create.content.schematics.SchematicChunkSource;
 import com.simibubi.create.content.schematics.SchematicItem;
-import com.simibubi.create.content.schematics.SchematicWorld;
+import net.createmod.catnip.levelWrappers.SchematicLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
@@ -16,14 +15,12 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlac
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class PatternSchematicWorld extends SchematicWorld {
+public class PatternSchematicLevel extends SchematicLevel {
   
   
   public Vec3i cloneScaleMin;
@@ -31,15 +28,16 @@ public class PatternSchematicWorld extends SchematicWorld {
   public Vec3i cloneOffset;
   public BoundingBox sourceBounds;
   
-  public PatternSchematicWorld(BlockPos anchor, Level original) {
+  public PatternSchematicLevel(BlockPos anchor, Level original) {
     super(anchor, original);
-    setChunkSource(new SchematicChunkSource(this));
-    this.blocks = new HashMap<>();
-    this.blockEntities = new HashMap<>();
-    this.bounds = new BoundingBox(BlockPos.ZERO);
-    this.anchor = anchor;
-    this.entities = new ArrayList<>();
-    this.renderedBlockEntities = new ArrayList<>();
+//    TODO: remove if stable
+//    setChunkSource(new SchematicChunkSource(this));
+//    this.blocks = new HashMap<>();
+//    this.blockEntities = new HashMap<>();
+//    this.bounds = new BoundingBox(BlockPos.ZERO);
+//    this.anchor = anchor;
+//    this.entities = new ArrayList<>();
+//    this.renderedBlockEntities = new ArrayList<>();
   }
   
   public void putExtraData(ItemStack blueprint, StructureTemplate template) {
@@ -51,18 +49,6 @@ public class PatternSchematicWorld extends SchematicWorld {
   
     sourceBounds = template.getBoundingBox(SchematicItem.getSettings(blueprint), anchor);
   }
-  
-  //TODO : Remove by release, i don't think ill need this, like ever
-//  public boolean setCloneBlock(BlockPos pos, BlockState state, int i) {
-//    AtomicBoolean result = new AtomicBoolean(false);
-//    System.out.println(pos);
-//    forEachClone(clonePos -> {
-//      System.out.println("=>" + applyCloneToRealLoc(pos, clonePos));
-//      if (super.setBlock(applyCloneToRealLoc(pos, clonePos), state, i))
-//        result.set(true);
-//    });
-//    return result.get();
-//  }
   
   @Override
   public boolean addFreshEntity(Entity entityIn) {
@@ -76,7 +62,7 @@ public class PatternSchematicWorld extends SchematicWorld {
   protected Entity cloneEntity(Entity source) {
     CompoundTag tag = new CompoundTag();
     source.save(tag);
-    Entity newEntity = EntityType.create(tag, world).orElseThrow();
+    Entity newEntity = EntityType.create(tag, level).orElseThrow();
     newEntity.setUUID(UUID.randomUUID());
     return newEntity;
   }
@@ -139,7 +125,7 @@ public class PatternSchematicWorld extends SchematicWorld {
     return originalBounds;
   }
   
-  /**This should only really be used for working at creation, use {@link ContraptionSchematicTransform} for active contraptions if thats needed*/
+  /**This should only really be used for working at creation*/
   protected Vec3 applyCloneToRealLoc(Vec3 local, Vec3i clone) {
     return local.add(Vec3.atLowerCornerOf(Vec3iUtils.multiplyVec3i(clone, sourceBounds.getLength().offset(1, 1, 1))));
   }

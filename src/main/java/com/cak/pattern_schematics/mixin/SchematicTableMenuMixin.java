@@ -1,6 +1,5 @@
 package com.cak.pattern_schematics.mixin;
 
-import com.cak.pattern_schematics.PatternSchematics;
 import com.cak.pattern_schematics.foundation.mixin_accessors.SchematicTableMenuMixinAccessor;
 import com.cak.pattern_schematics.registry.PatternSchematicsItems;
 import com.simibubi.create.AllItems;

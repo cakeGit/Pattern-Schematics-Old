@@ -3,9 +3,9 @@ package com.cak.pattern_schematics.foundation.mirror;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.simibubi.create.AllSpecialTextures;
 import com.simibubi.create.content.schematics.client.SchematicHandler;
-import com.simibubi.create.foundation.outliner.AABBOutline;
-import com.simibubi.create.foundation.render.SuperRenderTypeBuffer;
-import com.simibubi.create.foundation.utility.AnimationTickHolder;
+import net.createmod.catnip.animation.AnimationTickHolder;
+import net.createmod.catnip.outliner.AABBOutline;
+import net.createmod.catnip.render.SuperRenderTypeBuffer;
 import net.minecraft.world.phys.Vec3;
 
 public class SimpleSchematicOutlineRenderer {

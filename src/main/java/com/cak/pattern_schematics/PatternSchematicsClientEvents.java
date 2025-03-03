@@ -3,10 +3,15 @@ package com.cak.pattern_schematics;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.simibubi.create.CreateClient;
-import com.simibubi.create.content.contraptions.elevator.ElevatorControlsHandler;
-import com.simibubi.create.content.trains.TrainHUD;
-import com.simibubi.create.foundation.render.SuperRenderTypeBuffer;
-import com.simibubi.create.foundation.utility.AnimationTickHolder;
+import com.simibubi.create.content.contraptions.actors.seat.ContraptionPlayerPassengerRotation;
+import com.simibubi.create.content.contraptions.minecart.CouplingRenderer;
+import com.simibubi.create.content.kinetics.chainConveyor.ChainConveyorInteractionHandler;
+import com.simibubi.create.content.trains.entity.CarriageCouplingRenderer;
+import com.simibubi.create.content.trains.track.TrackBlockOutline;
+import com.simibubi.create.content.trains.track.TrackTargetingClient;
+import net.createmod.catnip.animation.AnimationTickHolder;
+import net.createmod.catnip.render.DefaultSuperRenderTypeBuffer;
+import net.createmod.catnip.render.SuperRenderTypeBuffer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
@@ -27,24 +32,25 @@ public class PatternSchematicsClientEvents {
       return;
     PatternSchematicsClient.PATTERN_SCHEMATIC_HANDLER.tick();
   }
-  
+
   @SubscribeEvent
   public static void onRenderWorld(RenderLevelStageEvent event) {
     if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES)
       return;
-  
+
     PoseStack ms = event.getPoseStack();
     ms.pushPose();
-    SuperRenderTypeBuffer buffer = SuperRenderTypeBuffer.getInstance();
-    float partialTicks = AnimationTickHolder.getPartialTicks();
+    SuperRenderTypeBuffer buffer = DefaultSuperRenderTypeBuffer.getInstance();
     Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera()
         .getPosition();
-    
+
     PatternSchematicsClient.PATTERN_SCHEMATIC_HANDLER.render(ms, buffer, camera);
-    
+
     buffer.draw();
     RenderSystem.enableCull();
     ms.popPose();
+
+    ContraptionPlayerPassengerRotation.frame();
   }
   
   @SubscribeEvent

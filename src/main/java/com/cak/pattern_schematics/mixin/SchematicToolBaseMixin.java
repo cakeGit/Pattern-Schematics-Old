@@ -1,13 +1,11 @@
 package com.cak.pattern_schematics.mixin;
 
 import com.cak.pattern_schematics.PatternSchematicsClient;
-import com.cak.pattern_schematics.foundation.mirror.PatternSchematicHandler;
 import com.cak.pattern_schematics.foundation.mirror.PatternSchematicsToolType;
 import com.cak.pattern_schematics.foundation.mirror.SimpleSchematicOutlineRenderer;
 import com.simibubi.create.CreateClient;
 import com.simibubi.create.content.schematics.client.SchematicHandler;
 import com.simibubi.create.content.schematics.client.tools.SchematicToolBase;
-import com.simibubi.create.foundation.outliner.AABBOutline;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -20,7 +18,12 @@ public class SchematicToolBaseMixin {
   @Shadow
   protected SchematicHandler schematicHandler;
   
-  /**Praise be to simi that none of the calls to this are specific enough that a slapped on extends in {@link com.cak.pattern_schematics.foundation.mirror.PatternSchematicHandler} works*/
+  /**
+   * Praise be to simi that none of the calls to this are specific enough that a slapped on
+   * extends in {@link com.cak.pattern_schematics.foundation.mirror.PatternSchematicHandler}
+   * works<br/><br/>
+   * Like really, this is stupid
+   **/
   @Inject(method = "init", at = @At("TAIL"))
   public void init(CallbackInfo ci) {
     schematicHandler =
@@ -28,7 +31,7 @@ public class SchematicToolBaseMixin {
         PatternSchematicsClient.PATTERN_SCHEMATIC_HANDLER : CreateClient.SCHEMATIC_HANDLER);
   }
   
-  @Inject(method = "renderOnSchematic", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lcom/simibubi/create/foundation/outliner/AABBOutline;render(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/simibubi/create/foundation/render/SuperRenderTypeBuffer;Lnet/minecraft/world/phys/Vec3;F)V"))
+  @Inject(method = "renderOnSchematic", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/createmod/catnip/outliner/AABBOutline;render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/createmod/catnip/render/SuperRenderTypeBuffer;Lnet/minecraft/world/phys/Vec3;F)V"))
   public void renderOnSchematic(CallbackInfo ci) {
     SimpleSchematicOutlineRenderer.applyOutlineModification(schematicHandler);
   }

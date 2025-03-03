@@ -1,6 +1,5 @@
 package com.cak.pattern_schematics.mixin;
 
-import com.cak.pattern_schematics.content.PatternSchematicItem;
 import com.cak.pattern_schematics.registry.PatternSchematicsItems;
 import com.simibubi.create.AllItems;
 import com.simibubi.create.content.schematics.cannon.SchematicannonInventory;

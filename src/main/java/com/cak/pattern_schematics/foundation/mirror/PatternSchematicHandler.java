@@ -1,8 +1,8 @@
 package com.cak.pattern_schematics.foundation.mirror;
 
-import com.cak.pattern_schematics.registry.PatternSchematicPackets;
 import com.cak.pattern_schematics.content.packet.PatternSchematicSyncPacket;
 import com.cak.pattern_schematics.foundation.util.Vec3iUtils;
+import com.cak.pattern_schematics.registry.PatternSchematicPackets;
 import com.cak.pattern_schematics.registry.PatternSchematicsItems;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -13,24 +13,25 @@ import com.simibubi.create.Create;
 import com.simibubi.create.content.contraptions.StructureTransform;
 import com.simibubi.create.content.schematics.SchematicInstances;
 import com.simibubi.create.content.schematics.SchematicItem;
-import com.simibubi.create.content.schematics.SchematicWorld;
 import com.simibubi.create.content.schematics.client.SchematicHandler;
 import com.simibubi.create.content.schematics.client.SchematicHotbarSlotOverlay;
 import com.simibubi.create.content.schematics.client.SchematicRenderer;
 import com.simibubi.create.content.schematics.client.SchematicTransformation;
 import com.simibubi.create.content.schematics.packet.SchematicPlacePacket;
-import com.simibubi.create.foundation.outliner.AABBOutline;
-import com.simibubi.create.foundation.render.SuperRenderTypeBuffer;
-import com.simibubi.create.foundation.utility.AnimationTickHolder;
-import com.simibubi.create.foundation.utility.Lang;
-import com.simibubi.create.foundation.utility.NBTHelper;
+import com.simibubi.create.foundation.blockEntity.IMultiBlockEntityContainer;
+import com.simibubi.create.foundation.blockEntity.SmartBlockEntity;
+import com.simibubi.create.foundation.utility.CreateLang;
+import net.createmod.catnip.animation.AnimationTickHolder;
+import net.createmod.catnip.levelWrappers.SchematicLevel;
+import net.createmod.catnip.nbt.NBTHelper;
+import net.createmod.catnip.outliner.AABBOutline;
+import net.createmod.catnip.render.SuperRenderTypeBuffer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
@@ -127,20 +128,24 @@ public class PatternSchematicHandler extends SchematicHandler implements IGuiOve
     //Todo: fix and make a pull req to create to fix it when presin numbers to quick switch
     if (!active || !stack.getTag()
         .getString("File")
-        .equals(displayedSchematic))
+        .equals(displayedSchematic)) {
+      this.renderers.forEach((r) -> r.setActive(false));
       init(player, stack);
+    }
+
     if (!active)
       return;
-    
-    renderers.forEach(SchematicRenderer::tick);
-    if (syncCooldown > 0)
-      syncCooldown--;
-    if (syncCooldown == 1)
-      sync();
-    
-    selectionScreen.update();
-    currentTool.getTool()
-        .updateSelection();
+
+    if (this.syncCooldown > 0) {
+      --this.syncCooldown;
+    }
+
+    if (this.syncCooldown == 1) {
+      this.sync();
+    }
+
+    this.selectionScreen.update();
+    this.currentTool.getTool().updateSelection();
   }
   
   private void init(LocalPlayer player, ItemStack stack) {
@@ -163,14 +168,14 @@ public class PatternSchematicHandler extends SchematicHandler implements IGuiOve
   private void setupRenderer() {
     Level clientWorld = Minecraft.getInstance().level;
     StructureTemplate schematic =
-        SchematicItem.loadSchematic(clientWorld.holderLookup(Registries.BLOCK), activeSchematicItem);
+        SchematicItem.loadSchematic(clientWorld, activeSchematicItem);
     Vec3i size = schematic.getSize();
     if (size.equals(Vec3i.ZERO))
       return;
-    
-    SchematicWorld w = new SchematicWorld(clientWorld);
-    SchematicWorld wMirroredFB = new SchematicWorld(clientWorld);
-    SchematicWorld wMirroredLR = new SchematicWorld(clientWorld);
+
+    SchematicLevel w = new SchematicLevel(clientWorld);
+    SchematicLevel wMirroredFB = new SchematicLevel(clientWorld);
+    SchematicLevel wMirroredLR = new SchematicLevel(clientWorld);
     StructurePlaceSettings placementSettings = new StructurePlaceSettings();
     StructureTransform transform;
     BlockPos pos;
@@ -180,12 +185,12 @@ public class PatternSchematicHandler extends SchematicHandler implements IGuiOve
     try {
       schematic.placeInWorld(w, pos, pos, placementSettings, w.getRandom(), Block.UPDATE_CLIENTS);
     } catch (Exception e) {
-      Minecraft.getInstance().player.displayClientMessage(Lang.translate("schematic.error")
+      Minecraft.getInstance().player.displayClientMessage(CreateLang.translate("schematic.error")
           .component(), false);
       Create.LOGGER.error("Failed to load Schematic for Previewing", e);
       return;
     }
-    
+
     placementSettings.setMirror(Mirror.FRONT_BACK);
     pos = BlockPos.ZERO.east(size.getX() - 1);
     schematic.placeInWorld(wMirroredFB, pos, pos, placementSettings, wMirroredFB.getRandom(), Block.UPDATE_CLIENTS);
@@ -193,7 +198,8 @@ public class PatternSchematicHandler extends SchematicHandler implements IGuiOve
         placementSettings.getMirror());
     for (BlockEntity be : wMirroredFB.getRenderedBlockEntities())
       transform.apply(be);
-    
+
+    this.fixControllerBlockEntities(wMirroredLR);
     placementSettings.setMirror(Mirror.LEFT_RIGHT);
     pos = BlockPos.ZERO.south(size.getZ() - 1);
     schematic.placeInWorld(wMirroredLR, pos, pos, placementSettings, wMirroredFB.getRandom(), Block.UPDATE_CLIENTS);
@@ -201,13 +207,32 @@ public class PatternSchematicHandler extends SchematicHandler implements IGuiOve
         placementSettings.getMirror());
     for (BlockEntity be : wMirroredLR.getRenderedBlockEntities())
       transform.apply(be);
-    
+
+    this.fixControllerBlockEntities(wMirroredLR);
     renderers.get(0)
         .display(w);
     renderers.get(1)
         .display(wMirroredFB);
     renderers.get(2)
         .display(wMirroredLR);
+  }
+
+  private void fixControllerBlockEntities(SchematicLevel level) {
+    for(BlockEntity blockEntity : level.getBlockEntities()) {
+      if (blockEntity instanceof IMultiBlockEntityContainer multiBlockEntity) {
+        BlockPos lastKnown = multiBlockEntity.getLastKnownPos();
+        BlockPos current = blockEntity.getBlockPos();
+        if (lastKnown != null && current != null && !multiBlockEntity.isController() && !lastKnown.equals(current)) {
+          BlockPos newControllerPos = multiBlockEntity.getController().offset(current.subtract(lastKnown));
+          if (multiBlockEntity instanceof SmartBlockEntity) {
+            SmartBlockEntity sbe = (SmartBlockEntity)multiBlockEntity;
+            sbe.markVirtual();
+          }
+
+          multiBlockEntity.setController(newControllerPos);
+        }
+      }
+    }
   }
   
   public void render(PoseStack ms, SuperRenderTypeBuffer buffer, Vec3 camera) {

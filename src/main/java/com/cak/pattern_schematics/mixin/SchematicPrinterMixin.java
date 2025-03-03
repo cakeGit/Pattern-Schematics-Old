@@ -1,10 +1,10 @@
 package com.cak.pattern_schematics.mixin;
 
 import com.cak.pattern_schematics.content.PatternSchematicItem;
-import com.cak.pattern_schematics.foundation.mirror.PatternSchematicWorld;
+import com.cak.pattern_schematics.foundation.mirror.PatternSchematicLevel;
 import com.cak.pattern_schematics.foundation.util.Vec3iUtils;
 import com.simibubi.create.content.schematics.SchematicPrinter;
-import com.simibubi.create.content.schematics.SchematicWorld;
+import net.createmod.catnip.levelWrappers.SchematicLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.util.RandomSource;
@@ -30,7 +30,7 @@ public class SchematicPrinterMixin {
   private static StructureTemplate lastThreadStructureTemplate = null;
   
   @Shadow
-  private SchematicWorld blockReader;
+  private SchematicLevel blockReader;
   
   @Inject(method = "loadSchematic", at = @At(value = "HEAD"))
   private void loadSchematic_head(ItemStack blueprint, Level originalWorld, boolean processNBT, CallbackInfo ci) {
@@ -43,30 +43,15 @@ public class SchematicPrinterMixin {
     return template;
   }
   
-  @Inject(method = "loadSchematic", at = @At(value = "FIELD", shift = At.Shift.AFTER, opcode = Opcodes.PUTFIELD, target = "Lcom/simibubi/create/content/schematics/SchematicPrinter;blockReader:Lcom/simibubi/create/content/schematics/SchematicWorld;"))
+  @Inject(method = "loadSchematic", at = @At(value = "FIELD", shift = At.Shift.AFTER, opcode = Opcodes.PUTFIELD, target = "Lcom/simibubi/create/content/schematics/SchematicPrinter;blockReader:Lnet/createmod/catnip/levelWrappers/SchematicLevel;"))
   private void loadSchematic(ItemStack blueprint, Level originalWorld, boolean processNBT, CallbackInfo ci) {
     if (lastThreadStack.getItem() instanceof PatternSchematicItem) {
-      PatternSchematicWorld patternSchematicWorld = new PatternSchematicWorld(blockReader.anchor, blockReader.getLevel());
-      patternSchematicWorld.putExtraData(blueprint, lastThreadStructureTemplate);
-      blockReader = patternSchematicWorld;
+      PatternSchematicLevel patternSchematicLevel = new PatternSchematicLevel(blockReader.anchor, blockReader.getLevel());
+      patternSchematicLevel.putExtraData(blueprint, lastThreadStructureTemplate);
+      blockReader = patternSchematicLevel;
     }
   }
-  
-//  @Redirect(method = "loadSchematic", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate;getSize()Lnet/minecraft/core/Vec3i;"))
-//  private Vec3i getBounds(StructureTemplate instance) {
-//    //For pattern schematics template.getbounds != world.getbounds
-//    Vec3i size = lastThreadStructureTemplate.getSize();
-////
-////    if (blockReader instanceof  PatternSchematicWorld patternSchematicWorld)
-////      return Vec3iUtils.multiplyVec3i(
-////          size, new Vec3i(1, 1, 1)
-////              .subtract(patternSchematicWorld.cloneScaleMin)
-////              .offset(patternSchematicWorld.cloneScaleMax)
-////      );
-////    else
-//      return size;
-//  }
-  
+
   ServerLevelAccessor lastWorld;
   StructurePlaceSettings lastPlaceSettings;
   
@@ -76,9 +61,9 @@ public class SchematicPrinterMixin {
                             RandomSource randomSource, int i) {
     lastWorld = world;
     lastPlaceSettings = placeSettings;
-    if (world instanceof PatternSchematicWorld patternSchematicWorld) {
-      Vec3i minScale = patternSchematicWorld.cloneScaleMin;
-      Vec3i maxScale = patternSchematicWorld.cloneScaleMax;
+    if (world instanceof PatternSchematicLevel patternSchematicLevel) {
+      Vec3i minScale = patternSchematicLevel.cloneScaleMin;
+      Vec3i maxScale = patternSchematicLevel.cloneScaleMax;
   
       Vec3i scale1 = new BlockPos(minScale).rotate(placeSettings.getRotation());
       Vec3i scale2 = new BlockPos(maxScale).rotate(placeSettings.getRotation());
@@ -91,10 +76,10 @@ public class SchematicPrinterMixin {
         for (int y = minScale.getY(); y <= maxScale.getY(); y++) {
           for (int z = minScale.getZ(); z <= maxScale.getZ(); z++) {
             BlockPos anchor = blockPos1.offset(
-                Vec3iUtils.multiplyVec3i(new Vec3i(x, y, z), patternSchematicWorld.sourceBounds.getLength().offset(1, 1, 1))
+                Vec3iUtils.multiplyVec3i(new Vec3i(x, y, z), patternSchematicLevel.sourceBounds.getLength().offset(1, 1, 1))
             );
             k++;
-            System.out.println("placed" + k + "" + Vec3iUtils.multiplyVec3i(new Vec3i(x, y, z), patternSchematicWorld.sourceBounds.getLength().offset(1, 1, 1)));
+            System.out.println("placed" + k + "" + Vec3iUtils.multiplyVec3i(new Vec3i(x, y, z), patternSchematicLevel.sourceBounds.getLength().offset(1, 1, 1)));
             instance.placeInWorld(world, anchor, anchor, placeSettings, randomSource, i);
           }
         }
@@ -104,10 +89,10 @@ public class SchematicPrinterMixin {
     return instance.placeInWorld(world, blockPos1, blockPos2, placeSettings, randomSource, i);
   }
   
-  @Redirect(method = "loadSchematic", at = @At(value = "INVOKE", target = "Lcom/simibubi/create/foundation/utility/BBHelper;encapsulate(Lnet/minecraft/world/level/levelgen/structure/BoundingBox;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/levelgen/structure/BoundingBox;"))
+  @Redirect(method = "loadSchematic", at = @At(value = "INVOKE", target = "Lnet/createmod/catnip/math/BBHelper;encapsulate(Lnet/minecraft/world/level/levelgen/structure/BoundingBox;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/levelgen/structure/BoundingBox;"))
   private BoundingBox loadSchem(BoundingBox bb, BlockPos pos) {
-    if (lastWorld instanceof PatternSchematicWorld patternSchematicWorld) {
-      return patternSchematicWorld.genBounds(bb, lastPlaceSettings);
+    if (lastWorld instanceof PatternSchematicLevel patternSchematicLevel) {
+      return patternSchematicLevel.genBounds(bb, lastPlaceSettings);
     }
     
     return bb;
